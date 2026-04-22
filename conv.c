@@ -7,6 +7,17 @@
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
+// void print_programm_state(Options options){
+//     printf("Input = %s\n", options.input.value.as_string);
+//     printf("Filter = %d\n", options.filter.value.as_filter);
+//     printf("Mode = %d\n", options.mode.value.as_mode);
+//     printf("Size = %d\n", options.size.value.as_int);
+//     printf("Clean = %d\n", options.clean.value.as_bool);
+//     printf("Help = %d\n", options.help.value.as_bool);
+// }
 
 bool input_is_valid(const char *input)
 {
@@ -28,7 +39,7 @@ bool input_is_valid(const char *input)
     fclose(file);
 
     // valid extension?
-    char *dot_sign = strchr(input, '.');
+    char *dot_sign = strrchr(input, '.');
     if (dot_sign == NULL)
     {
         fprintf(stderr, "file '%s' must have (.png) extension\n", input);
@@ -37,7 +48,7 @@ bool input_is_valid(const char *input)
     else
     {
         char *extention = dot_sign + 1;
-        if (strcmp(extention, "png"))
+        if (strcmp(extention, "jpeg") && strcmp(extention, "jpg"))
         {
             fprintf(stderr, "file '%s' must have (.png) extension\n", input);
             return false;
@@ -219,6 +230,53 @@ void parse_arguments(int argc, char *argv[], Options *options)
     }
 }
 
+bool is_png(char *name)
+{
+
+    const char *dot = strrchr(name, '.');
+    if (dot && (!strcmp(dot + 1, "jpeg") || !strcmp(dot + 1, "jpg")))
+    {
+        return true;
+    }
+    return false;
+}
+
+void get_default_input(char *path_buffer, size_t size)
+{
+
+    DIR *dir;
+    struct dirent *entry;
+
+    dir = opendir("./images");
+    if (dir == NULL)
+    {
+        fprintf(stderr, "Error: cannot open directory './images'\n");
+        printf("Check if 'images' directory exists in the current directory\n");
+        printf("\nFor more information, try '--help' and read about default value of --input option.\n");
+        exit(-1);
+    }
+
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+        {
+            continue;
+        }
+
+        if (is_png(entry->d_name))
+        {
+            snprintf(path_buffer, size, "./images/%s", entry->d_name);
+            closedir(dir);
+            return;
+        }
+    }
+
+    closedir(dir);
+    fprintf(stderr, "Error: no (.png) files found in './images' directory\n");
+    printf("\nFor more information, try '--help' and read about default value of --input option.\n");
+    exit(-1);
+}
+
 int main(int argc, char *argv[])
 {
     // default values for args
@@ -245,6 +303,14 @@ int main(int argc, char *argv[])
     };
 
     parse_arguments(argc, argv, &options);
+    if (options.input.value.as_string == NULL)
+    {
+        char default_input[512];
+        get_default_input(default_input, 512);
+        options.input.value.as_string = default_input;
+    }
+
+    //print_programm_state(options);
 
     return 0;
 }
