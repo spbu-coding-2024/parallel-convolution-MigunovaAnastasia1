@@ -9,7 +9,6 @@ typedef enum
     FILTER_SHARPEN,  // повышение резкости
     FILTER_EDGE,     // выделение границ
     FILTER_EMBOSS,   // тиснение
-    FILTER_GAUSSIAN, // гауссово размытие
     FILTER_MOTION,   // размытие в движении
 } FilterType;
 

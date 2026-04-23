@@ -1,14 +1,15 @@
+// manual run: gcc ./src/*.c -I ./deps -I ./include -o conv -lm
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "Options.h"
-
-#include <stdio.h>
 #include <stdbool.h>
-#include <string.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <sys/stat.h>
+
+#include "OptionTypes.h"
+#include "CoreBuilder.h"
+#include "proc_image.h"
 
 // void print_programm_state(Options options){
 //     printf("Input = %s\n", options.input.value.as_string);
@@ -42,15 +43,15 @@ bool input_is_valid(const char *input)
     char *dot_sign = strrchr(input, '.');
     if (dot_sign == NULL)
     {
-        fprintf(stderr, "file '%s' must have (.png) extension\n", input);
+        fprintf(stderr, "file '%s' must have jpeg/jpg/png/bmp extension\n", input);
         return false;
     }
     else
     {
         char *extention = dot_sign + 1;
-        if (strcmp(extention, "jpeg") && strcmp(extention, "jpg"))
+        if (strcmp(extention, "jpeg") && strcmp(extention, "jpg") && strcmp(extention, "png") && strcmp(extention, "bmp"))
         {
-            fprintf(stderr, "file '%s' must have (.png) extension\n", input);
+            fprintf(stderr, "file '%s' must have jpeg/jpg/png/bmp extension\n", input);
             return false;
         }
     }
@@ -103,6 +104,22 @@ void invalid_arg(char *invalid_arg, Options options)
     exit(-1);
 }
 
+void clean_outputs_dir() {
+    DIR *dir = opendir("./outputs");
+    if (!dir) return;
+    
+    struct dirent *e;
+    char path[512];
+    
+    while ((e = readdir(dir)) != NULL) {
+        if (e->d_name[0] == '.') continue;  // skip . and ..
+        snprintf(path, sizeof(path), "./outputs/%s", e->d_name);
+        remove(path);
+    }
+    closedir(dir);
+    exit(0);
+}
+
 void parse_arguments(int argc, char *argv[], Options *options)
 {
     for (int i = 1; i < argc; i++)
@@ -145,10 +162,6 @@ void parse_arguments(int argc, char *argv[], Options *options)
                 else if (!strcmp(value, "emboss"))
                 {
                     options->filter.value.as_filter = FILTER_EMBOSS;
-                }
-                else if (!strcmp(value, "gaussian"))
-                {
-                    options->filter.value.as_filter = FILTER_GAUSSIAN;
                 }
                 else if (!strcmp(value, "motion"))
                 {
@@ -217,7 +230,7 @@ void parse_arguments(int argc, char *argv[], Options *options)
         }
         else if (!strcmp(options->clean.cmd_name, argv[i]) || !strcmp("-c", argv[i]))
         {
-            options->clean.value.as_bool = true;
+            clean_outputs_dir();
         }
         else if (!strcmp(options->help.cmd_name, argv[i]) || !strcmp("-h", argv[i]))
         {
@@ -230,20 +243,20 @@ void parse_arguments(int argc, char *argv[], Options *options)
     }
 }
 
-bool is_png(char *name)
+bool is_image(char *name)
 {
 
     const char *dot = strrchr(name, '.');
-    if (dot && (!strcmp(dot + 1, "jpeg") || !strcmp(dot + 1, "jpg")))
+    if (dot && (!strcmp(dot + 1, "jpeg") || !strcmp(dot + 1, "jpg") || !strcmp(dot + 1, "png") || !strcmp(dot + 1, "bmp")))
     {
         return true;
     }
     return false;
 }
 
-void get_default_input(char *path_buffer, size_t size)
-{
 
+char *get_default_input()
+{
     DIR *dir;
     struct dirent *entry;
 
@@ -263,11 +276,14 @@ void get_default_input(char *path_buffer, size_t size)
             continue;
         }
 
-        if (is_png(entry->d_name))
+        if (is_image(entry->d_name))
         {
-            snprintf(path_buffer, size, "./images/%s", entry->d_name);
+            size_t size = strlen(entry->d_name) + 1; // 1 учитывает '/0' в конце строки
+            char *default_input = (char *)malloc(size);
+            snprintf(default_input, size, "%s", entry->d_name);
             closedir(dir);
-            return;
+            printf("Input file: %s\n", default_input);
+            return default_input;
         }
     }
 
@@ -288,7 +304,7 @@ int main(int argc, char *argv[])
 
         .filter = OPTION("--filter", VAL_FILTER(FILTER_BLUR),
                          "Filter type. Possible values: blur, sharpen,"
-                         " edge, emboss, gaussian, motion (default: blur)"),
+                         " edge, emboss, motion (default: blur)"),
 
         .size = OPTION("--size", VAL_INT(3),
                        "Kernel size. Possible values: any odd number in the range from 3 to 13 (default: 3)"),
@@ -303,14 +319,16 @@ int main(int argc, char *argv[])
     };
 
     parse_arguments(argc, argv, &options);
+
     if (options.input.value.as_string == NULL)
     {
-        char default_input[512];
-        get_default_input(default_input, 512);
-        options.input.value.as_string = default_input;
+        options.input.value.as_string = get_default_input(); // FREE
     }
 
-    //print_programm_state(options);
+    Kernel *kernel = kernel_builder(options.filter.value.as_filter, options.size.value.as_int);
+    proc_image(options.input.value.as_string, options.mode.value.as_mode, *kernel);
+
+    kernel_free(kernel);
 
     return 0;
 }
