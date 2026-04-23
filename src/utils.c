@@ -53,20 +53,20 @@ void store_image(const char *filename, int width, int height, unsigned char *dat
     }
 }
 
+/* для оптимизации по памяти:
+ *
+ * 1) запись изображения в градациях серого производится по тому же адресу, по которому находилось первоначальное изображение
+ * 2) первоначальное цветное изображение в channels раз больше полученного в градациях серого,
+ *    потому переаллоцируем более маленький (меньший в channels раз) кусок памяти на куче.
+ *
+ * */
+
 unsigned char *RGB2grayscale(unsigned char *image_data, int width, int height, int channels)
 {
-    if (channels == 1) // уже в grayscale
-    {
+    if (channels == 1)
         return image_data;
-    }
 
     size_t grayscale_size = width * height;
-    unsigned char *grayscale_data = (unsigned char *)malloc(grayscale_size);
-    if (grayscale_data == NULL)
-    {
-        fprintf(stderr, "Error: Could not allocate memory for grayscale image.\n");
-        exit(2);
-    }
 
     for (int y = 0; y < height; y++)
     {
@@ -89,9 +89,10 @@ unsigned char *RGB2grayscale(unsigned char *image_data, int width, int height, i
                 exit(-1);
             }
 
-            // Ограничиваем значение в диапазоне 0-255 и записываем в grayscale_data
-            grayscale_data[pixel_index] = (unsigned char)(grayscale_value > 255 ? 255 : (grayscale_value < 0 ? 0 : grayscale_value));
+            // Ограничиваем значение в диапазоне 0-255
+            image_data[pixel_index] = (unsigned char)(grayscale_value > 255 ? 255 : (grayscale_value < 0 ? 0 : grayscale_value));
         }
     }
-    return grayscale_data;
+    image_data = realloc(image_data, grayscale_size);
+    return image_data;
 }

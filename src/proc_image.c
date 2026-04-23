@@ -3,7 +3,6 @@
 #include "proc_image.h"
 #include "utils.h"
 
-
 unsigned char *seq_conv(unsigned char *image_data, int width, int height, Kernel kernel)
 {
     size_t image_size = width * height;
@@ -55,7 +54,7 @@ void proc_image(const char *image_name, ModeType mode, Kernel kernel)
 
     int width, height, channels;
     unsigned char *image = load_image(input_path, &width, &height, &channels);
-    unsigned char *grayscale_image = RGB2grayscale(image, width, height, channels);
+    image = RGB2grayscale(image, width, height, channels);
 
     unsigned char *result_image;
 
@@ -63,7 +62,7 @@ void proc_image(const char *image_name, ModeType mode, Kernel kernel)
         switch (mode)
         {
         case MODE_SEQ:
-            result_image = seq_conv(grayscale_image, width, height, kernel);
+            result_image = seq_conv(image, width, height, kernel);
             break;
         case MODE_PIXEL:
 
@@ -90,6 +89,5 @@ void proc_image(const char *image_name, ModeType mode, Kernel kernel)
     store_image(output_path, width, height, result_image);
 
     free(image);
-    free(grayscale_image);
     free(result_image);
 }
