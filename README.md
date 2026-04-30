@@ -49,6 +49,8 @@ make test
   <em>The benchmarks were conducted on the following system:</em>
 </p>
 
+###### **12 logical cores - the ability to run 12 threads in parallel
+
 ### Benchmark results
 
 #### Bench 1
@@ -72,4 +74,21 @@ make test
   <em>Big image + small core</em>
 </p>
 
-### Conclusions
+
+## Analysis
+
+#### Row mode
+
+* Row mode makes the best use of spatial cache locality, resulting in the fewest cache misses. It consistently delivers the best performance across all image sizes and kernel sizes.
+
+#### Column mode
+
+* For relatively small images (those that fit into the cache of the test hardware), column mode performs comparably to row and block modes. However, for large images that exceed cache capacity, its performance degrades significantly — becoming more than twice as slow as row and block modes.
+
+#### Block mode
+
+* Block mode demonstrates strong performance on images of any size, achieving results comparable to row mode. It also exhibits good spatial locality, making it a reliable choice across different workloads.
+
+#### Pixel mode
+
+* This parallelization strategy provides no speedup compared to the sequential implementation. In some cases, it is even slightly slower due to the high overhead of parallelization at the individual pixel level.
