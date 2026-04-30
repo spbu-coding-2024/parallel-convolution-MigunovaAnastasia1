@@ -31,20 +31,3 @@ cmake ..
 make build
 ./conv
 ```
-### Run benchmarks
-```bash
-# inside ./build after cmake ..
-make bench
-```
-### Run tests
-```bash
-# inside ./build after cmake ..png
-make test
-```
-## Benchmarks
-### Cache configuration
-<p align="center">
-  <img src="benchmark/cache-conf.png" alt="Cache-conf" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
-  <br>
-  <em>The benchmarks were conducted on the following system:</em>
-</p>
