@@ -10,7 +10,7 @@
 #include "core_builder.h"
 #include "proc_image_utils.h"
 
-#define NUM_RUNS 20
+#define NUM_RUNS 50
 #define INPUT_FILE "./../images/7680x4320.jpg"
 
 #define BENCH(method)                                        \

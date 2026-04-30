@@ -28,7 +28,7 @@ add_custom_target(build DEPENDS conv_bin)
 add_executable(bench_bin src/benchmark.c ${COMMON_SOURCES})
 set_target_properties(bench_bin PROPERTIES OUTPUT_NAME bench_exe)
 add_custom_target(bench
-    COMMAND ./bench_exe --size=13 --filter=motion
+    COMMAND ./bench_exe --size=3 --filter=motion
     DEPENDS bench_bin
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

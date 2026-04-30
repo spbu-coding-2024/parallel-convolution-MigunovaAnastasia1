@@ -4,7 +4,7 @@ import numpy as np
 methods = []
 data = []
 
-filename = "results"
+filename = "results3"
 
 with open(filename + ".csv") as f:
     for line in f:
@@ -39,7 +39,7 @@ for i, d in enumerate(data, start=1):
 ax.set_xticks(np.arange(1, len(methods) + 1))
 ax.set_xticklabels(methods, rotation=20)
 ax.set_ylabel("Time (sec)")
-ax.set_title("Benchmark results")
+ax.set_title("Benchmark results for image 7680x4320 with core size 3x3")
 
 plt.grid(True, axis="y", linestyle="--", alpha=0.6)
 plt.tight_layout()
