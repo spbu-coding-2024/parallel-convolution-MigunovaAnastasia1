@@ -24,7 +24,7 @@ _The utility has no required arguments. All settings are optional and have defau
 ## Quick Start
 
 ### Build and run conv
-
+Before running the utility, create an `images` directory in the repository root and add at least one image file (`.png`, `.jpg`, `.jpeg`, or `.bmp`).
 ```bash
 gcc ./src/*.c -I ./deps -I ./include -o conv -lm
 ./conv
