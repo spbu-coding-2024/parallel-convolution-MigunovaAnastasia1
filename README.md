@@ -26,8 +26,6 @@ _The utility has no required arguments. All settings are optional and have defau
 ### Build and run conv
 
 ```bash
-cd ./build
-cmake ..
-make build
+gcc ./src/*.c -I ./deps -I ./include -o conv -lm
 ./conv
 ```
