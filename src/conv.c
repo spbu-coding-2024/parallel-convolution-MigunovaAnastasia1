@@ -1,4 +1,4 @@
-// manual run: gcc ./src/*.c -I ./deps -I ./include -o conv -lm
+// manual run: gcc -fopenmp ./src/*.c -I ./deps -I ./include -o conv -lm
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -10,15 +10,6 @@
 #include "OptionTypes.h"
 #include "CoreBuilder.h"
 #include "proc_image.h"
-
-// void print_programm_state(Options options){
-//     printf("Input = %s\n", options.input.value.as_string);
-//     printf("Filter = %d\n", options.filter.value.as_filter);
-//     printf("Mode = %d\n", options.mode.value.as_mode);
-//     printf("Size = %d\n", options.size.value.as_int);
-//     printf("Clean = %d\n", options.clean.value.as_bool);
-//     printf("Help = %d\n", options.help.value.as_bool);
-// }
 
 bool input_is_valid(const char *input)
 {
@@ -104,15 +95,19 @@ void invalid_arg(char *invalid_arg, Options options)
     exit(-1);
 }
 
-void clean_outputs_dir() {
+void clean_outputs_dir()
+{
     DIR *dir = opendir("./outputs");
-    if (!dir) return;
-    
+    if (!dir)
+        return;
+
     struct dirent *e;
     char path[512];
-    
-    while ((e = readdir(dir)) != NULL) {
-        if (e->d_name[0] == '.') continue;  // skip . and ..
+
+    while ((e = readdir(dir)) != NULL)
+    {
+        if (e->d_name[0] == '.')
+            continue; // skip . and ..
         snprintf(path, sizeof(path), "./outputs/%s", e->d_name);
         remove(path);
     }
@@ -254,7 +249,6 @@ bool is_image(char *name)
     return false;
 }
 
-
 char *get_default_input()
 {
     DIR *dir;
@@ -328,6 +322,7 @@ int main(int argc, char *argv[])
     Kernel *kernel = kernel_builder(options.filter.value.as_filter, options.size.value.as_int);
     proc_image(options.input.value.as_string, options.mode.value.as_mode, *kernel);
 
+    free(options.input.value.as_string);
     kernel_free(kernel);
 
     return 0;
