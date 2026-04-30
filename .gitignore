@@ -1,5 +1,7 @@
 conv
 bench
+test
+build
 *.jpg
 *.jpeg
 *.png

@@ -3,16 +3,16 @@
 #include <omp.h>
 
 #include "proc_image.h"
-#include "utils.h"
+#include "proc_image_utils.h"
 
 #define CONVOLUTION_CORE                                                          \
                                                                                   \
     int pixel_value = 0;                                                          \
     int start_x = x - kernel.size / 2;                                            \
     int start_y = y - kernel.size / 2;                                            \
-    for (int filter_y = 0; filter_y < kernel.size; filter_y++)                    \
+    for (size_t filter_y = 0; filter_y < kernel.size; filter_y++)                    \
     {                                                                             \
-        for (int filter_x = 0; filter_x < kernel.size; filter_x++)                \
+        for (size_t filter_x = 0; filter_x < kernel.size; filter_x++)                \
         {                                                                         \
             /* wrapping around */                                                 \
             int image_x = (start_x + filter_x + width) % width;                   \

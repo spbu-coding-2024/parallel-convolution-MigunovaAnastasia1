@@ -4,13 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "conv.h"
+#include "cli_utils.h"
 #include "proc_image.h"
-#include "OptionTypes.h"
-#include "CoreBuilder.h"
-#include "utils.h"
+#include "option_types.h"
+#include "core_builder.h"
+#include "proc_image_utils.h"
 
-#define NUM_RUNS 50
+#define NUM_RUNS 20
+#define INPUT_FILE "./../images/7680x4320.jpg"
 
 #define BENCH(method)                                        \
                                                              \
@@ -22,7 +23,7 @@
         times[i] = end - start;                              \
     }
 
-double average(double times[])
+static double average(double times[])
 {
     double sum = 0;
     for (int i = 0; i < NUM_RUNS; i++)
@@ -30,7 +31,7 @@ double average(double times[])
     return sum / NUM_RUNS;
 }
 
-void run_benchmark(unsigned char *image, int width, int height, Kernel *kernel, ModeType mode, double *times)
+static void run_benchmark(unsigned char *image, int width, int height, Kernel *kernel, ModeType mode, double *times)
 {
 
     unsigned char *result_image = (unsigned char *)malloc(width * height);
@@ -96,18 +97,10 @@ int main(int argc, char **argv)
 
     parse_arguments(argc, argv, &options);
 
-    if (options.input.value.as_string == NULL)
-    {
-        options.input.value.as_string = get_default_input();
-    }
-
     Kernel *kernel = kernel_builder(options.filter.value.as_filter, options.size.value.as_int);
 
-    char input_path[512];
-    snprintf(input_path, 512, "./images/%s", options.input.value.as_string);
-
     int width, height, channels;
-    unsigned char *image = load_image(input_path, &width, &height, &channels);
+    unsigned char *image = load_image(INPUT_FILE, &width, &height, &channels);
     image = RGB2grayscale(image, width, height, channels);
 
     /*=======run benchmarks=============*/
