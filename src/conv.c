@@ -18,8 +18,8 @@ int main(int argc, char *argv[])
     // default values for args
     Options options = {
         .input = OPTION("--input", VAL_STRING(NULL),
-                        "Input file. File must have .png extention and be located in 'images' directory relative\n                             "
-                        "to the current working directory. Example: ./images/photo.png\n                             "
+                        "Input file. File must have png, jpg, jpeg or bmp extention and be located in ./images directory.\n                              "
+                        "Example: --input=photo.png (file: ./images/photo.png)\n                              "
                         "(default: first file in the ./images directory)"),
 
         .filter = OPTION("--filter", VAL_FILTER(FILTER_BLUR),
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
                        "Processing mode. Possible values: seq, pixel, row, column, block (default: seq)"),
 
         .clean = OPTION("--clean", VAL_BOOL(false),
-                        "Remove all files from ./output directory before writing new results"),
+                        "Remove all files from ./outputs directory before writing new results"),
         .help = OPTION("--help", VAL_BOOL(false),
                        "Print help information"),
     };
@@ -42,8 +42,9 @@ int main(int argc, char *argv[])
 
     if (options.input.value.as_string == NULL)
     {
-        options.input.value.as_string = get_default_input(); // FREE
+        options.input.value.as_string = get_default_input();
     }
+    printf("Input file: %s\n", options.input.value.as_string);
 
     Kernel *kernel = kernel_builder(options.filter.value.as_filter, options.size.value.as_int);
     proc_image(options.input.value.as_string, options.mode.value.as_mode, *kernel);

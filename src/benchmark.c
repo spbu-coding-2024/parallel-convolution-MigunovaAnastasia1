@@ -11,7 +11,6 @@
 #include "proc_image_utils.h"
 
 #define NUM_RUNS 50
-#define INPUT_FILE "./../images/7680x4320.jpg"
 
 #define BENCH(method)                                        \
                                                              \
@@ -96,11 +95,18 @@ int main(int argc, char **argv)
     };
 
     parse_arguments(argc, argv, &options);
+    if (options.input.value.as_string == NULL)
+    {
+        options.input.value.as_string = get_default_input();
+    }
+
+    char input_path[512];
+    snprintf(input_path, 512, "./images/%s", options.input.value.as_string);
 
     Kernel *kernel = kernel_builder(options.filter.value.as_filter, options.size.value.as_int);
 
     int width, height, channels;
-    unsigned char *image = load_image(INPUT_FILE, &width, &height, &channels);
+    unsigned char *image = load_image(input_path, &width, &height, &channels);
     image = RGB2grayscale(image, width, height, channels);
 
     /*=======run benchmarks=============*/
@@ -110,6 +116,14 @@ int main(int argc, char **argv)
     double row_times[NUM_RUNS];
     double column_times[NUM_RUNS];
     double block_times[NUM_RUNS];
+
+    char *filters[] = {"blur", "sharpen", "edge", "emboss", "motion"};
+    printf("Benchmark configuration:\n");
+    printf("    Image:           %s\n", input_path);
+    printf("    Filter:          %s\n", filters[options.filter.value.as_filter]);
+    printf("    Kernel size:     %d\n\n", options.size.value.as_int);
+
+    printf("Results:\n\n");
 
     run_benchmark(image, width, height, kernel, MODE_SEQ, seq_times);
     printf("Seq: %.4f", seq_times[0]);

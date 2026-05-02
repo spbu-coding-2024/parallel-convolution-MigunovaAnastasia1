@@ -111,7 +111,6 @@ static void clean_outputs_dir()
         remove(path);
     }
     closedir(dir);
-    exit(0);
 }
 
 static bool is_image(char *name)
@@ -147,7 +146,9 @@ void parse_arguments(int argc, char *argv[], Options *options)
             {
                 if (input_is_valid(value))
                 {
-                    options->input.value.as_string = value;
+                    char *input_file = (char *)malloc(strlen(value) + 1);
+                    snprintf(input_file, strlen(value) + 1, "%s", value);
+                    options->input.value.as_string = input_file;
                 }
                 else
                 {
@@ -275,13 +276,12 @@ char *get_default_input()
             char *default_input = (char *)malloc(size);
             snprintf(default_input, size, "%s", entry->d_name);
             closedir(dir);
-            printf("Input file: %s\n", default_input);
             return default_input;
         }
     }
 
     closedir(dir);
-    fprintf(stderr, "Error: no (.png) files found in './images' directory\n");
+    fprintf(stderr, "Error: no image files found in './images' directory\n");
     printf("\nFor more information, try '--help' and read about default value of --input option.\n");
     exit(-1);
 }

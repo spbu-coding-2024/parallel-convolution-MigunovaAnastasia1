@@ -4,11 +4,11 @@
 #include <cmocka.h>
 #include <stdlib.h>
 #include <string.h>
+#include "cli_utils.h"
 #include "proc_image.h"
 #include "core_builder.h"
 #include "proc_image_utils.h"
 
-#define INPUT_IMAGE "./../images/569x339.jpg"
 typedef struct
 {
 	unsigned char *input_image;
@@ -31,8 +31,12 @@ static int setup(void **state)
 {
 	TestContext *ctx = malloc(sizeof(TestContext));
 	assert_non_null(ctx);
+	char input_file[512];
+	char *file_name = get_default_input();
+	snprintf(input_file, 512, "./images/%s", file_name);
+	free(file_name);
 
-	ctx->input_image = load_image(INPUT_IMAGE,
+	ctx->input_image = load_image(input_file,
 								  &ctx->width, &ctx->height, &ctx->channels);
 
 	ctx->input_image = RGB2grayscale(ctx->input_image,
