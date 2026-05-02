@@ -36,14 +36,14 @@ make build
 ```
 ### Run benchmarks
 
-##### Run benchmarks with default parameters
+#### Run benchmarks with default parameters
 
 ```bash
 # inside ./build after cmake ..
 make bench
 ```
 
-##### Run benchmarks with custom parameters
+#### Run benchmarks with custom parameters
 
 You can override default parameters using CMake variables:
 
