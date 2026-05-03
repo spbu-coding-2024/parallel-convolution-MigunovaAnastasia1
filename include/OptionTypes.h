@@ -35,7 +35,7 @@ typedef struct
     ValueType type; 
     union
     { 
-        const char *as_string;
+        char *as_string;
         FilterType as_filter;
         int as_int;
         ModeType as_mode;
