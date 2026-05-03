@@ -1,0 +1,7 @@
+conv
+build
+*.jpg
+*.jpeg
+*.png
+*.bmp
+.vscode
