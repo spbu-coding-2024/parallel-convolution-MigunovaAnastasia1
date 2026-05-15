@@ -94,5 +94,10 @@ unsigned char *RGB2grayscale(unsigned char *image_data, int width, int height, i
         }
     }
     image_data = realloc(image_data, grayscale_size);
+    if (image_data == NULL)
+    {
+        fprintf(stderr, "Error: Could not re-allocate memory to store grayscale image.\n");
+        exit(-1);
+    }
     return image_data;
 }

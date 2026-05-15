@@ -1,0 +1,53 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+methods = []
+data = []
+means = []
+
+filename = "results3"
+
+with open(filename + ".csv") as f:
+    for line in f:
+        parts = line.strip().split(":")
+        if not parts or len(parts) < 2:
+            continue
+        results = parts[1].strip().split(",")
+        method = parts[0]
+        values = [float(x) for x in results]
+        methods.append(method)
+        data.append(values)
+        means.append(np.mean(values))
+
+fig, ax = plt.subplots(figsize=(10, 6))
+
+labels = [f"{methods[i]}: {means[i]:.4f}" for i in range(len(methods))]
+
+# boxplot
+bp = ax.boxplot(
+    data,
+    positions=np.arange(len(data)) + 1,
+    widths=0.6,
+    patch_artist=True,
+    showfliers=False,
+)
+
+colors = ["#FF9999", "#99FF99", "#9999FF", "#FFCC99", "#CC99FF", "#66CCCC"]
+for patch, color in zip(bp["boxes"], colors * 10):
+    patch.set_facecolor(color)
+    patch.set_alpha(0.6)
+
+for i, d in enumerate(data, start=1):
+    x = np.random.normal(i, 0.04, size=len(d))
+    ax.plot(x, d, "o", markersize=4, alpha=0.7, color="black")
+
+ax.set_xticks(np.arange(1, len(methods) + 1))
+ax.set_xticklabels(labels, rotation=20)
+ax.set_ylabel("Time (sec)")
+ax.set_title("Benchmark results for image 7680x4320 with core size 3x3")
+
+plt.grid(True, axis="y", linestyle="--", alpha=0.6)
+plt.tight_layout()
+
+plt.savefig(filename + ".png", dpi=200)
+plt.show()

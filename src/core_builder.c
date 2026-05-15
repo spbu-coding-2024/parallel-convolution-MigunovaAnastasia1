@@ -1,8 +1,8 @@
 #include <stdlib.h>
-#include "OptionTypes.h"
-#include "CoreBuilder.h"
+#include "option_types.h"
+#include "core_builder.h"
 
-Kernel *kernel_init(int size)
+static Kernel *kernel_init(int size)
 {
     Kernel *k = (Kernel *)malloc(sizeof(Kernel));
     if (!k)
@@ -21,32 +21,23 @@ Kernel *kernel_init(int size)
     return k;
 }
 
-void kernel_free(Kernel *k)
-{
-    if (k)
-    {
-        free(k->matrix);
-        free(k);
-    }
-}
-
-void create_blur_kernel(Kernel *kernel, size_t size)
+static void create_blur_kernel(Kernel *kernel, size_t size)
 {
     kernel->filter_name = "bl";
-    for (unsigned i = 0; i < size * size; i++)
+    for (size_t i = 0; i < size * size; i++)
     {
         kernel->matrix[i] = 1;
     }
     kernel->factor = 1.0 / (size * size);
 }
 
-void create_sharpen_kernel(Kernel *kernel, size_t size)
+static void create_sharpen_kernel(Kernel *kernel, size_t size)
 {
 
     kernel->filter_name = "sh";
-    int total_elements = size * size;
+    size_t total_elements = size * size;
 
-    for (int i = 0; i < total_elements; i++)
+    for (size_t i = 0; i < total_elements; i++)
     {
         kernel->matrix[i] = -1;
     }
@@ -54,13 +45,13 @@ void create_sharpen_kernel(Kernel *kernel, size_t size)
     kernel->matrix[(size / 2) * (size + 1)] = total_elements;
 }
 
-void create_edge_kernel(Kernel *kernel, size_t size)
+static void create_edge_kernel(Kernel *kernel, size_t size)
 {
 
     kernel->filter_name = "edg";
-    int total_elements = size * size;
+    size_t total_elements = size * size;
 
-    for (int i = 0; i < total_elements; i++)
+    for (size_t i = 0; i < total_elements; i++)
     {
         kernel->matrix[i] = -1;
     }
@@ -68,13 +59,13 @@ void create_edge_kernel(Kernel *kernel, size_t size)
     kernel->matrix[(size / 2) * (size + 1)] = total_elements - 1;
 }
 
-void create_emboss_kernel(Kernel *kernel, size_t size)
+static void create_emboss_kernel(Kernel *kernel, size_t size)
 {
 
     kernel->filter_name = "emb";
-    for (int y = 0; y < size; y++)
+    for (size_t y = 0; y < size; y++)
     {
-        for (int x = 0; x < size; x++)
+        for (size_t x = 0; x < size; x++)
         {
             if (x < y)
             {
@@ -94,16 +85,16 @@ void create_emboss_kernel(Kernel *kernel, size_t size)
     kernel->bias = 128.0;
 }
 
-void create_motion_kernel(Kernel *kernel, size_t size)
+static void create_motion_kernel(Kernel *kernel, size_t size)
 {
 
     kernel->filter_name = "mot";
-    for (int i = 0; i < size * size; i++)
+    for (size_t i = 0; i < size * size; i++)
     {
         kernel->matrix[i] = 0;
     }
 
-    for (int i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
         kernel->matrix[i * size + i] = 1;
     }
@@ -151,5 +142,14 @@ Kernel *kernel_builder(FilterType filter, size_t size)
         fprintf(stderr, "Error: unknown filter type\n");
         kernel_free(kernel);
         exit(-1);
+    }
+}
+
+void kernel_free(Kernel *k)
+{
+    if (k)
+    {
+        free(k->matrix);
+        free(k);
     }
 }

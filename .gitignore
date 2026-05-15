@@ -1,6 +1,6 @@
-conv
 *.jpg
 *.jpeg
-*.png
 *.bmp
+*.csv
 .vscode
+build
