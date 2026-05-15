@@ -9,6 +9,11 @@
 #include "core_builder.h"
 #include "proc_image_utils.h"
 
+#define IMAGE_DIR "./images"
+
+size_t task_granularity_k = 3;
+size_t grid_granularity_k = 1;
+
 typedef struct
 {
 	unsigned char *input_image;
@@ -32,8 +37,8 @@ static int setup(void **state)
 	TestContext *ctx = malloc(sizeof(TestContext));
 	assert_non_null(ctx);
 	char input_file[512];
-	char *file_name = get_default_input();
-	snprintf(input_file, 512, "./images/%s", file_name);
+	char *file_name = get_default_input(IMAGE_DIR);
+	snprintf(input_file, 512, "%s/%s",IMAGE_DIR, file_name);
 	free(file_name);
 
 	ctx->input_image = load_image(input_file,

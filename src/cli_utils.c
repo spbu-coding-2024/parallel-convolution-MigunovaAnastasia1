@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <errno.h>
+#include <strings.h>
 #include <sys/stat.h>
 
 #include "option_types.h"
@@ -66,6 +68,7 @@ static void print_options(Options options)
     printf("    --size=<size>             %s\n", options.size.description);
     printf("    --mode=<mode>             %s\n\n", options.mode.description);
     printf("Flags:\n");
+    printf("    --queue, -q               %s\n", options.queue.description);
     printf("    --clean, -c               %s\n", options.clean.description);
     printf("    --help,  -h               %s\n", options.help.description);
 }
@@ -122,6 +125,191 @@ static bool is_image(char *name)
         return true;
     }
     return false;
+}
+
+char **get_image_paths(char *directory)
+{
+    DIR *dir = opendir(directory);
+    if (dir == NULL)
+    {
+        perror(directory);
+        exit(-1);
+    }
+
+    size_t capacity = 8;
+    size_t count = 0;
+    char **paths = malloc(capacity * sizeof(char *));
+    if (paths == NULL)
+    {
+        perror("malloc");
+        exit(-1);
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        // skip "." и ".."
+        if (entry->d_name[0] == '.')
+            continue;
+
+        if (is_image(entry->d_name))
+        {
+
+            char full_path[512];
+            snprintf(full_path, sizeof(full_path), "%s/%s", directory, entry->d_name);
+
+            paths[count] = strdup(full_path); // FREE
+            if (paths[count] == NULL)
+            {
+                perror("strdup");
+                exit(-1);
+            }
+            count++;
+
+            if (count >= capacity)
+            {
+                capacity *= 2;
+                char **new_paths = realloc(paths, capacity * sizeof(char *));
+                if (new_paths == NULL)
+                {
+                    perror("realloc");
+                    exit(-1);
+                }
+                paths = new_paths;
+            }
+        }
+    }
+
+    closedir(dir);
+
+    // добавляем NULL-терминатор
+    char **final_paths = realloc(paths, (count + 1) * sizeof(char *));
+    if (final_paths == NULL)
+    {
+        perror("realloc");
+        exit(-1);
+    }
+    final_paths[count] = NULL;
+
+    return final_paths;
+}
+
+char **get_paths(char *directory)
+{
+    DIR *dir = opendir(directory);
+    if (dir == NULL)
+    {
+        perror(directory);
+        exit(-1);
+    }
+
+    size_t capacity = 8;
+    size_t count = 0;
+    char **paths = malloc(capacity * sizeof(char *));
+    if (paths == NULL)
+    {
+        perror("malloc");
+        exit(-1);
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        // skip "." и ".."
+        if (entry->d_name[0] == '.')
+            continue;
+
+        char full_path[512];
+        snprintf(full_path, sizeof(full_path), "%s/%s", directory, entry->d_name);
+
+        paths[count] = strdup(full_path); // FREE
+        if (paths[count] == NULL)
+        {
+            perror("strdup");
+            exit(-1);
+        }
+        count++;
+
+        if (count >= capacity)
+        {
+            capacity *= 2;
+            char **new_paths = realloc(paths, capacity * sizeof(char *));
+            if (new_paths == NULL)
+            {
+                perror("realloc");
+                exit(-1);
+            }
+            paths = new_paths;
+        }
+    }
+
+    closedir(dir);
+
+    // добавляем NULL-терминатор
+    char **final_paths = realloc(paths, (count + 1) * sizeof(char *));
+    if (final_paths == NULL)
+    {
+        perror("realloc");
+        exit(-1);
+    }
+    final_paths[count] = NULL;
+
+    return final_paths;
+}
+
+char **get_output_paths(char **input_paths)
+{
+    // create ./outputs
+    struct stat st;
+    if (stat("./outputs", &st) == -1)
+    {
+        if (mkdir("./outputs", 0755) == -1 && errno != EEXIST)
+        {
+            fprintf(stderr, "Error: cannot create directory './outputs'\n");
+            exit(-1);
+        }
+    }
+
+    size_t count = 0;
+    while (input_paths[count] != NULL)
+        count++;
+
+    char **output_paths = malloc((count + 1) * sizeof(char *));
+    if (output_paths == NULL)
+    {
+        perror("malloc");
+        exit(-1);
+    }
+
+    for (size_t i = 0; i < count; i++)
+    {
+        const char *last_slash = strrchr(input_paths[i], '/');
+        const char *filename = last_slash + 1;
+
+        size_t out_len = strlen("./outputs/") + strlen(filename) + 1;
+        char *out_path = malloc(out_len);
+        if (out_path == NULL)
+        {
+            perror("malloc");
+            exit(-1);
+        }
+        snprintf(out_path, out_len, "./outputs/%s", filename);
+        output_paths[i] = out_path;
+    }
+    output_paths[count] = NULL;
+
+    return output_paths;
+}
+
+void free_paths(char **paths)
+{
+    if (paths == NULL)
+        return;
+    for (size_t i = 0; paths[i] != NULL; i++)
+    {
+        free(paths[i]);
+    }
+    free(paths);
 }
 
 void parse_arguments(int argc, char *argv[], Options *options)
@@ -234,6 +422,10 @@ void parse_arguments(int argc, char *argv[], Options *options)
                 invalid_arg(argv[i], *options);
             }
         }
+        else if (!strcmp(options->queue.cmd_name, argv[i]) || !strcmp("-q", argv[i]))
+        {
+            options->queue.value.as_bool = true;
+        }
         else if (!strcmp(options->clean.cmd_name, argv[i]) || !strcmp("-c", argv[i]))
         {
             clean_outputs_dir();
@@ -249,12 +441,12 @@ void parse_arguments(int argc, char *argv[], Options *options)
     }
 }
 
-char *get_default_input()
+char *get_default_input(char *directory)
 {
     DIR *dir;
     struct dirent *entry;
 
-    dir = opendir("./images");
+    dir = opendir(directory);
     if (dir == NULL)
     {
         fprintf(stderr, "Error: cannot open directory './images'\n");
