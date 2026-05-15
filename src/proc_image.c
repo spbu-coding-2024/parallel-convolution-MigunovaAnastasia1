@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <omp.h>
+#include <float.h>
+#include <math.h>
 
 #include "proc_image.h"
 #include "proc_image_utils.h"
@@ -10,9 +12,9 @@
     int pixel_value = 0;                                                          \
     int start_x = x - kernel.size / 2;                                            \
     int start_y = y - kernel.size / 2;                                            \
-    for (size_t filter_y = 0; filter_y < kernel.size; filter_y++)                    \
+    for (size_t filter_y = 0; filter_y < kernel.size; filter_y++)                 \
     {                                                                             \
-        for (size_t filter_x = 0; filter_x < kernel.size; filter_x++)                \
+        for (size_t filter_x = 0; filter_x < kernel.size; filter_x++)             \
         {                                                                         \
             /* wrapping around */                                                 \
             int image_x = (start_x + filter_x + width) % width;                   \
@@ -25,6 +27,30 @@
     pixel_value = pixel_value * kernel.factor + kernel.bias;                      \
     result_image[y * width + x] =                                                 \
         (unsigned char)(pixel_value > 255.0 ? 255.0 : (pixel_value < 0.0 ? 0.0 : pixel_value));
+
+static void choose_block_grid(int N, int width, int height, int *rows, int *cols)
+{
+    int best_rows = 1, best_cols = N;
+    double best_aspect = DBL_MAX;
+    for (int r = 1; r <= N; r++)
+    {
+        if (N % r == 0)
+        {
+            int c = N / r;
+            double block_w = (double)width / c;
+            double block_h = (double)height / r;
+            double aspect_diff = fmax(block_w / block_h, block_h / block_w);
+            if (aspect_diff < best_aspect)
+            {
+                best_aspect = aspect_diff;
+                best_rows = r;
+                best_cols = c;
+            }
+        }
+    }
+    *rows = best_rows;
+    *cols = best_cols;
+}
 
 void seq_conv(unsigned char *image_data, int width, int height, Kernel kernel, unsigned char *result_image)
 {
@@ -66,6 +92,7 @@ void column_parallel_conv(unsigned char *image_data, int width, int height, Kern
 void pixel_parallel_conv(unsigned char *image_data, int width, int height, Kernel kernel, unsigned char *result_image)
 {
 
+#pragma omp parallel for
     for (int pixel_id = 0; pixel_id < width * height; pixel_id++)
     {
         int x = pixel_id % width;
@@ -78,64 +105,29 @@ void pixel_parallel_conv(unsigned char *image_data, int width, int height, Kerne
 void block_parallel_conv(unsigned char *image_data, int width, int height, Kernel kernel, unsigned char *result_image)
 {
 
-// создаем потоки заранее для того, чтобы узнать их количество, так как хотим динамически задать
-// количество блоков на основе количества потоков, чтобы обеспечить работой каждый поток (load-balance).
 #pragma omp parallel
     {
 
-        int num_threads = omp_get_num_threads();
-        int blocks_amount;
-        int blocks_row_amount;
-        int blocks_column_amount;
-        int block_width;
-        int block_height;
-
-        if (num_threads % 2 == 0)
-        {
-            blocks_amount = num_threads;
-        }
-        else
-        {
-            blocks_amount = num_threads * 2;
-        }
-
-        if (width <= height)
-        {
-            blocks_column_amount = 2;
-            blocks_row_amount = blocks_amount / 2;
-            block_width = width / blocks_column_amount;
-            block_height = height / blocks_row_amount;
-        }
-        else
-        {
-            blocks_row_amount = 2;
-            blocks_column_amount = blocks_amount / 2;
-            block_width = width / blocks_column_amount;
-            block_height = height / blocks_row_amount;
-        }
+        int blocks_count = omp_get_num_threads();
+        int grid_rows;
+        int grid_cols;
+        choose_block_grid(blocks_count, width, height, &grid_rows, &grid_cols);
+        int block_h = height / grid_rows;
+        int block_w = width / grid_cols;
 
 #pragma omp for
-        for (int block_id = 0; block_id < blocks_amount; block_id++)
+        for (int block_id = 0; block_id < blocks_count; block_id++)
         {
-            int block_x;
-            int block_y;
-            if (blocks_column_amount == 2)
-            {
-                block_x = block_id / blocks_row_amount;
-                block_y = block_id % blocks_row_amount;
-            }
-            else
-            {
-                block_x = block_id % blocks_column_amount;
-                block_y = block_id / blocks_column_amount;
-            }
 
-            for (int y = block_y * block_height; y < (block_y + 1) * block_height ||
-                                                 ((block_y + 1) == blocks_row_amount && y < height);
+            int block_x = block_id % grid_cols;
+            int block_y = block_id / grid_cols;
+
+            for (int y = block_y * block_h; (y < (block_y + 1) * block_h) ||
+                                            (block_y + 1 == grid_rows && y < height);
                  y++)
             {
-                for (int x = block_x * block_width; x < (block_x + 1) * block_width ||
-                                                    ((block_x + 1) == blocks_column_amount && x < width);
+                for (int x = block_x * block_w; (x < (block_x + 1) * block_w) ||
+                                                (block_x + 1 == grid_cols && x < width);
                      x++)
 
                 {

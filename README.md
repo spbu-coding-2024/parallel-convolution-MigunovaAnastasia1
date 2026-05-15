@@ -92,21 +92,21 @@ make test
 <p align="center">
   <img src="benchmark/results1.png" alt="Bench 1" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
   <br>
-  <em>Small image + small core</em>
+  <em>Small image</em>
 </p>
 
 #### Bench 2
 <p align="center">
   <img src="benchmark/results2.png" alt="Bench 2" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
   <br>
-  <em>Medium image + medium core</em>
+  <em>Medium image</em>
 </p>
 
 #### Bench 3
 <p align="center">
   <img src="benchmark/results3.png" alt="Bench 3" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
   <br>
-  <em>Big image + small core</em>
+  <em>Big image</em>
 </p>
 
 
@@ -114,16 +114,16 @@ make test
 
 #### Row mode
 
-* Row mode makes the best use of spatial cache locality, resulting in the fewest cache misses. It consistently delivers the best performance across all image sizes and kernel sizes.
-
-#### Column mode
-
-* For relatively small images (those that fit into the cache of the test hardware), column mode performs comparably to row and block modes. However, for large images that exceed cache capacity, its performance degrades significantly — becoming more than twice as slow as row and block modes.
-
-#### Block mode
-
-* Block mode demonstrates strong performance on images of any size, achieving results comparable to row mode. It also exhibits good spatial locality, making it a reliable choice across different workloads.
+* Row‑based parallelisation makes very good use of spatial cache locality, which results in few cache misses. It consistently delivers among the best performance across all image sizes.
 
 #### Pixel mode
 
-* This parallelization strategy provides no speedup compared to the sequential implementation. In some cases, it is even slightly slower due to the high overhead of parallelization at the individual pixel level.
+* Pixel‑based parallelisation strategy yields almost identical performance to the row‑based strategy. Both approaches traverse the image in row‑major order, preserving spatial locality and sequential memory access. The only difference is that in the row‑based strategy, threads are assigned whole rows, whereas in the pixel‑based strategy, threads receive whole rows plus possibly a partial row at the edges.
+
+#### Column mode
+
+* For relatively small images (those that fit into the cache of the test hardware), column mode performs comparably to row and block modes. However, for large images that exceed cache capacity, its performance degrades significantly — becoming more than twice as slow as other parallel modes.
+
+#### Block mode
+
+* Block mode demonstrates solid performance on images of any size, achieving results close to those of row and pixel modes, though slightly below them. It also exhibits good spatial cache locality, making it a reliable choice across different workloads
