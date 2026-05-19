@@ -10,7 +10,11 @@
 #include "core_builder.h"
 #include "proc_image_utils.h"
 
+size_t task_granularity_k = 3;
+size_t grid_granularity_k = 1;
+
 #define NUM_RUNS 50
+#define IMAGE_DIR "./images"
 
 #define BENCH(method)                                        \
                                                              \
@@ -97,7 +101,7 @@ int main(int argc, char **argv)
     parse_arguments(argc, argv, &options);
     if (options.input.value.as_string == NULL)
     {
-        options.input.value.as_string = get_default_input();
+        options.input.value.as_string = get_default_input(IMAGE_DIR);
     }
 
     char input_path[512];

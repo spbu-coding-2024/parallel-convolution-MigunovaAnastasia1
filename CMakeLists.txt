@@ -16,6 +16,7 @@ set(COMMON_SOURCES
 	src/core_builder.c
 	src/proc_image_utils.c
 	src/proc_image.c
+	src/queue.c
 )
 
 # ============ CLI приложение ============
@@ -23,7 +24,7 @@ add_executable(conv_bin src/conv.c ${COMMON_SOURCES})
 set_target_properties(conv_bin PROPERTIES OUTPUT_NAME conv)
 add_custom_target(build DEPENDS conv_bin)
 
-# ============ Бенчмарк ============
+# ============ Бенчмарк task2 (single_img.c) ============
 
 if(NOT DEFINED MY_BENCH_SIZE)
 	set(MY_BENCH_SIZE "3")
@@ -33,24 +34,48 @@ if(NOT DEFINED MY_BENCH_FILTER)
 	set(MY_BENCH_FILTER "blur")
 endif()
 
-add_executable(bench_bin src/benchmark.c ${COMMON_SOURCES})
-set_target_properties(bench_bin PROPERTIES OUTPUT_NAME bench_exe)
+add_executable(bench_task2_bin benchmarks/src/single_img.c ${COMMON_SOURCES})
+set_target_properties(bench_task2_bin PROPERTIES OUTPUT_NAME bench_task2_exe)
 
 if(DEFINED MY_BENCH_INPUT)
-	add_custom_target(bench
-		COMMAND ./bench_exe --input=${MY_BENCH_INPUT} --size=${MY_BENCH_SIZE}
+	add_custom_target(bench_task2
+		COMMAND ./bench_task2_exe --input=${MY_BENCH_INPUT} --size=${MY_BENCH_SIZE}
 			--filter=${MY_BENCH_FILTER}
-		DEPENDS bench_bin
+		DEPENDS bench_task2_bin
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
 	unset(MY_BENCH_INPUT CACHE)
 else()
-	add_custom_target(bench
-		COMMAND ./bench_exe --size=${MY_BENCH_SIZE} --filter=${MY_BENCH_FILTER}
-		DEPENDS bench_bin
+	add_custom_target(bench_task2
+		COMMAND ./bench_task2_exe --size=${MY_BENCH_SIZE} --filter=${MY_BENCH_FILTER}
+		DEPENDS bench_task2_bin
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
 endif()
+
+# ============ Бенчмарк task3 (queue_img.c) ============
+
+add_executable(bench_task3_bin benchmarks/src/queue_img.c ${COMMON_SOURCES})
+set_target_properties(bench_task3_bin PROPERTIES OUTPUT_NAME bench_task3_exe)
+
+add_custom_target(bench_task3
+	COMMAND ./bench_task3_exe
+	DEPENDS bench_task3_bin
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# ============ Бенчмарк setup.c ============
+
+add_executable(bench_setup_bin benchmarks/src/setup.c ${COMMON_SOURCES})
+set_target_properties(bench_setup_bin PROPERTIES OUTPUT_NAME bench_setup_exe)
+
+add_custom_target(bench_setup
+	COMMAND ./bench_setup_exe
+	DEPENDS bench_setup_bin
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# ================ Tесты =====================
 
 add_executable(test_bin tests/test_parallel_methods.c ${COMMON_SOURCES})
 target_include_directories(test_bin PRIVATE ${CMOCKA_INCLUDE_DIRS})
@@ -65,7 +90,9 @@ add_custom_target(test
 )
 
 target_link_libraries(conv_bin PRIVATE m pthread)
-target_link_libraries(bench_bin PRIVATE m pthread)
+target_link_libraries(bench_task2_bin PRIVATE m pthread)
+target_link_libraries(bench_task3_bin PRIVATE m pthread)
+target_link_libraries(bench_setup_bin PRIVATE m pthread)
 target_link_libraries(test_bin PRIVATE m pthread)
 
 unset(MY_BENCH_SIZE CACHE)

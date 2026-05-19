@@ -1,5 +1,8 @@
-*.jpg
 *.jpeg
 *.bmp
+*.csv
 .vscode
+venv
 build
+outputs
+images

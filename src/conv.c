@@ -11,7 +11,12 @@
 #include "core_builder.h"
 #include "proc_image.h"
 #include "cli_utils.h"
+#include "queue.h"
 
+#define IMAGE_DIR "./images"
+
+size_t task_granularity_k = 3;
+size_t grid_granularity_k = 1;
 
 int main(int argc, char *argv[])
 {
@@ -32,6 +37,9 @@ int main(int argc, char *argv[])
         .mode = OPTION("--mode", VAL_MODE(MODE_SEQ),
                        "Processing mode. Possible values: seq, pixel, row, column, block (default: seq)"),
 
+        .queue = OPTION("--queue", VAL_BOOL(false),
+                        "Enable queue-based pipeline processing (reader → convolution → writer)"),
+
         .clean = OPTION("--clean", VAL_BOOL(false),
                         "Remove all files from ./outputs directory before writing new results"),
         .help = OPTION("--help", VAL_BOOL(false),
@@ -40,14 +48,28 @@ int main(int argc, char *argv[])
 
     parse_arguments(argc, argv, &options);
 
+    if (options.queue.value.as_bool)
+    {
+        Kernel *kernel = kernel_builder(options.filter.value.as_filter, options.size.value.as_int);
+        conv_queue(options.mode.value.as_mode, *kernel, IMAGE_DIR);
+        if (options.input.value.as_string != NULL)
+        {
+            free(options.input.value.as_string);
+        }
+        kernel_free(kernel);
+        return 0;
+    }
+
     if (options.input.value.as_string == NULL)
     {
-        options.input.value.as_string = get_default_input();
+        options.input.value.as_string = get_default_input(IMAGE_DIR);
     }
     printf("Input file: %s\n", options.input.value.as_string);
 
     Kernel *kernel = kernel_builder(options.filter.value.as_filter, options.size.value.as_int);
-    proc_image(options.input.value.as_string, options.mode.value.as_mode, *kernel);
+    char image_path[512];
+    snprintf(image_path, 512, "%s/%s", IMAGE_DIR, options.input.value.as_string);
+    proc_image(image_path, options.mode.value.as_mode, *kernel);
 
     free(options.input.value.as_string);
     kernel_free(kernel);

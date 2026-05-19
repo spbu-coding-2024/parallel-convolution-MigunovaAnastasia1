@@ -1,8 +1,9 @@
+[![CI](https://github.com/spbu-coding-2024/parallel-convolution-MigunovaAnastasia1/actions/workflows/ci.yaml/badge.svg)](https://github.com/spbu-coding-2024/parallel-convolution-MigunovaAnastasia1/actions/workflows/ci.yaml)
 # Conv
 Apply convolution filters (blur, sharpen, edge detection, etc.) to images
 ## Usage
 ```
-conv --input=<input_file> --filter=<filter> --size=<size> --mode=<mode> [--clean]
+conv --input=<input_file> --filter=<filter> --size=<size> --mode=<mode> [--queue] [--clean]
 ```
 _The utility has no required arguments. All settings are optional and have default values._
 
@@ -18,6 +19,7 @@ _The utility has no required arguments. All settings are optional and have defau
 
 | Flag            | Description                                                               |
 | --------------- | ------------------------------------------------------------------------- |
+| `--queue`, `-q` | Enable queue-based pipeline processing (reader → convolution → writer)    |
 | `--clean`, `-c` | Remove all files from the `./output` directory before writing new results |
 | `--help`, `-h`  | Print help information with all available options and flags               |
 
@@ -36,14 +38,32 @@ make build
 ```
 ### Run benchmarks
 
-#### Run benchmarks with default parameters
+The project includes three benchmark suites:
 
-```bash
-# inside ./build after cmake ..
-make bench
-```
+1. **Single‑image convolution** 
+  
+  ```bash
+  # inside ./build after cmake ..
+  make bench_task2
+  ```  
+   Compares different parallelisation strategies (rows, columns, pixels, blocks).
 
-#### Run benchmarks with custom parameters
+2. **Pipeline processing** 
+  ```bash
+  # inside ./build after cmake ..
+  make bench_task3
+  ```   
+   Parallel pipeline vs sequential.
+
+3. **Common convolution parameters tuning**
+  ```bash
+  # inside ./build after cmake ..
+  make bench_setup
+  ```  
+   Finds optimal values for `grid_granularity_k` and `task_granularity_k`. 
+   (see [task_granularity_analysis.md](./benchmarks/results/task_granularity_analysis.md) and [grid_granularity_analysis.md](./benchmarks/results/grid_granularity_analysis.md))
+
+#### Run bench_task2 with custom parameters
 
 You can override default parameters using CMake variables:
 
@@ -60,7 +80,7 @@ Usage:
 ```bash
 # inside ./build
 cmake -DMY_BENCH_SIZE=<kernel_size> -DMY_BENCH_FILTER=<filter> -DMY_BENCH_INPUT=<name_of_input_image> ..
-make bench
+make bench_task2
 ```
 
 Example:
@@ -68,7 +88,7 @@ Example:
 ```bash
 # inside ./build
 cmake -DMY_BENCH_SIZE=7 -DMY_BENCH_INPUT=300x120.jpg ..
-make bench
+make bench_task2
 ```
 
 ### Run tests
@@ -77,9 +97,10 @@ make bench
 make test
 ```
 ## Benchmarks
+
 ### Cache configuration
 <p align="center">
-  <img src="benchmark/cache-conf.png" alt="Cache-conf" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
+  <img src="./benchmarks/pictures/cache-conf.png" alt="Cache-conf" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
   <br>
   <em>The benchmarks were conducted on the following system:</em>
 </p>
@@ -87,43 +108,75 @@ make test
 ###### **12 logical cores - the ability to run 12 threads in parallel
 
 ### Benchmark results
-
-#### Bench 1
+#### Benchmarks for Single‑image convolution
+##### Bench 1
 <p align="center">
-  <img src="benchmark/results1.png" alt="Bench 1" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
+  <img src="./benchmarks/pictures/results1.png" alt="Bench 1" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
   <br>
-  <em>Small image + small core</em>
+  <em>Small image</em>
 </p>
 
-#### Bench 2
+##### Bench 2
 <p align="center">
-  <img src="benchmark/results2.png" alt="Bench 2" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
+  <img src="./benchmarks/pictures/results2.png" alt="Bench 2" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
   <br>
-  <em>Medium image + medium core</em>
+  <em>Medium image</em>
 </p>
 
 #### Bench 3
 <p align="center">
-  <img src="benchmark/results3.png" alt="Bench 3" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
+  <img src="./benchmarks/pictures/results3.png" alt="Bench 3" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
   <br>
-  <em>Big image + small core</em>
+  <em>Big image</em>
 </p>
 
 
-## Analysis
+###### Analysis
 
-#### Row mode
+##### Row mode
 
-* Row mode makes the best use of spatial cache locality, resulting in the fewest cache misses. It consistently delivers the best performance across all image sizes and kernel sizes.
+* Row‑based parallelisation makes very good use of spatial cache locality, which results in few cache misses. It consistently delivers among the best performance across all image sizes.
 
-#### Column mode
+##### Pixel mode
 
-* For relatively small images (those that fit into the cache of the test hardware), column mode performs comparably to row and block modes. However, for large images that exceed cache capacity, its performance degrades significantly — becoming more than twice as slow as row and block modes.
+* Pixel‑based parallelisation strategy yields almost identical performance to the row‑based strategy. Both approaches traverse the image in row‑major order, preserving spatial locality and sequential memory access. The only difference is that in the row‑based strategy, threads are assigned whole rows, whereas in the pixel‑based strategy, threads receive whole rows plus possibly a partial row at the edges.
 
-#### Block mode
+##### Column mode
 
-* Block mode demonstrates strong performance on images of any size, achieving results comparable to row mode. It also exhibits good spatial locality, making it a reliable choice across different workloads.
+* For relatively small images (those that fit into the cache of the test hardware), column mode performs comparably to row and block modes. However, for large images that exceed cache capacity, its performance degrades significantly — becoming more than twice as slow as other parallel modes.
 
-#### Pixel mode
+##### Block mode
 
-* This parallelization strategy provides no speedup compared to the sequential implementation. In some cases, it is even slightly slower due to the high overhead of parallelization at the individual pixel level.
+* Block mode demonstrates solid performance on images of any size, achieving results close to those of row and pixel modes, though slightly below them. It also exhibits good spatial cache locality, making it a reliable choice across different workloads
+
+#### Benchmarks for Pipeline processing
+
+##### Bench 1
+<p align="center">
+  <img src="./benchmarks/pictures/pipeline_results.png" alt="Bench 1" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
+  <br>
+</p>
+
+###### Analysis
+* Sequential processing: ≈ 44.6 seconds
+
+* Pipeline processing: ≈ 9.3 seconds
+
+* Speedup: the pipeline processes the same queue about **4.8×** faster than the sequential version.
+
+**Conclusion**: Even for a moderately sized queue (22 images), the pipeline provides a significant performance gain.
+
+##### Bench 2
+<p align="center">
+  <img src="./benchmarks/pictures/pipeline_speedup.png" alt="Bench 1" width="800" style="border: 1px solid #ddd; border-radius: 4px;">
+  <br>
+</p>
+  
+###### Analysis
+* **X‑axis**: number of images in the queue (0, 2, 4, …, 22)
+
+* **Y‑axis**: speedup (sequential time / pipeline time)
+
+**Trend**: speedup increases rapidly after 2–4 images, then stabilises around 3.8–4.2.
+
+**Reason**: With a very short queue, the pipeline is underutilised (stages frequently idle), limiting the speedup. As the queue grows, the pipeline fills up, resulting in a steady increase in speedup. The improvement per added image gradually diminishes, but overall performance continues to gain until near-saturation is reached.

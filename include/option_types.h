@@ -5,11 +5,11 @@
 
 typedef enum
 {
-    FILTER_BLUR,     // размытие
-    FILTER_SHARPEN,  // повышение резкости
-    FILTER_EDGE,     // выделение границ
-    FILTER_EMBOSS,   // тиснение
-    FILTER_MOTION,   // размытие в движении
+    FILTER_BLUR,    // размытие
+    FILTER_SHARPEN, // повышение резкости
+    FILTER_EDGE,    // выделение границ
+    FILTER_EMBOSS,  // тиснение
+    FILTER_MOTION,  // размытие в движении
 } FilterType;
 
 typedef enum
@@ -23,18 +23,18 @@ typedef enum
 
 typedef enum
 {
-    VAL_TYPE_INT, 
-    VAL_TYPE_STRING, 
-    VAL_TYPE_BOOL,   
-    VAL_TYPE_FILTER, 
-    VAL_TYPE_MODE   
+    VAL_TYPE_INT,
+    VAL_TYPE_STRING,
+    VAL_TYPE_BOOL,
+    VAL_TYPE_FILTER,
+    VAL_TYPE_MODE
 } ValueType;
 
 typedef struct
 {
-    ValueType type; 
+    ValueType type;
     union
-    { 
+    {
         char *as_string;
         FilterType as_filter;
         int as_int;
@@ -69,6 +69,7 @@ typedef struct
     Option filter;
     Option size;
     Option mode;
+    Option queue;
     Option clean;
     Option help;
 } Options;
