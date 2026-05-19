@@ -9,7 +9,7 @@
 #include "core_builder.h"
 #include "proc_image_utils.h"
 
-#define IMAGE_DIR "./../tests/data/300x120.jpg"
+#define IMAGE_DIR "./../tests/data"
 
 size_t task_granularity_k = 3;
 size_t grid_granularity_k = 1;

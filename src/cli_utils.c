@@ -449,8 +449,8 @@ char *get_default_input(char *directory)
     dir = opendir(directory);
     if (dir == NULL)
     {
-        fprintf(stderr, "Error: cannot open directory './images'\n");
-        printf("Check if 'images' directory exists in the current directory\n");
+        fprintf(stderr, "Error: cannot open directory '%s'\n", directory);
+        printf("Check if '%s' directory exists in the current directory\n", directory);
         printf("\nFor more information, try '--help' and read about default value of --input option.\n");
         exit(-1);
     }
