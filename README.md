@@ -1,3 +1,4 @@
+[![CI](https://github.com/spbu-coding-2024/parallel-convolution-MigunovaAnastasia1/actions/workflows/ci.yaml/badge.svg)](https://github.com/spbu-coding-2024/parallel-convolution-MigunovaAnastasia1/actions/workflows/ci.yaml)
 # Conv
 Apply convolution filters (blur, sharpen, edge detection, etc.) to images
 ## Usage
